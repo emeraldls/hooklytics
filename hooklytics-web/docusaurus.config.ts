@@ -76,7 +76,7 @@ const config: Config = {
       title: 'Hooklytics',
       logo: {
         alt: 'Hooklytics Logo',
-        src: 'img/logo.svg',
+        src: 'img/docusaurus.png',
       },
       items: [
         {
@@ -85,7 +85,9 @@ const config: Config = {
           position: 'left',
           label: 'Tutorial',
         },
-        {to: '/blog', label: 'Blog', position: 'left'},
+        {
+          type: 'docsVersionDropdown',
+        },
         {
           href: 'https://www.npmjs.com/package/hooklytics',
           label: 'npm',
@@ -106,11 +108,7 @@ const config: Config = {
           items: [
             {
               label: 'Getting Started',
-              to: '/docs/getting-started',
-            },
-            {
-              label: 'API Reference',
-              to: '/docs/api/use-track-event',
+              to: '/docs/intro',
             },
             {
               label: 'Examples',
@@ -121,10 +119,6 @@ const config: Config = {
         {
           title: 'Community',
           items: [
-            {
-              label: 'Stack Overflow',
-              href: 'https://stackoverflow.com/questions/tagged/hooklytics',
-            },
             {
               label: 'GitHub Discussions',
               href: 'https://github.com/vingtai/hooklytics/discussions',
@@ -138,10 +132,6 @@ const config: Config = {
         {
           title: 'More',
           items: [
-            {
-              label: 'Blog',
-              to: '/blog',
-            },
             {
               label: 'GitHub',
               href: 'https://github.com/vingtai/hooklytics',

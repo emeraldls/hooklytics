@@ -17,18 +17,17 @@ function HomepageHeader() {
           {siteConfig.title}
         </Heading>
         <p className="hero__subtitle">{siteConfig.tagline}</p>
-
       </div>
     </header>
   );
 }
 
 export default function Home(): ReactNode {
-  const {siteConfig} = useDocusaurusContext();
+  // const {siteConfig} = useDocusaurusContext();
   return (
     <Layout
-      title={`Hello from ${siteConfig.title}`}
-      description="Description will go into a meta tag in <head />">
+      title="Hooklytics: The Analytics Hook Library for React"
+      description="Track user events and behaviors with simple React hooks. No scripts. Just powerful analytics for modern UIs.">
       <HomepageHeader />
       <main>
         <HomepageFeatures />

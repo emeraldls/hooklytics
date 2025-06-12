@@ -1,6 +1,4 @@
----
-sidebar_position: 1
----
+
 # Analytics Hooks Documentation
 
 A comprehensive React hook library for tracking user interactions and analytics events with element reference support.
@@ -22,23 +20,43 @@ A comprehensive React hook library for tracking user interactions and analytics 
 
 ## Installation & Setup
 
+Install the package:
+
 ```bash
 npm install hooklytics
-```
+````
 
-Ensure your app is wrapped with the analytics context provider:
+Wrap your application with the `AnalyticsProvider`:
 
-```jsx
+```tsx
 import { AnalyticsProvider } from 'hooklytics';
 
 function App() {
   return (
-    <AnalyticsProvider>
+    <AnalyticsProvider
+      config={{
+        environment: 'dev',          // Optional: 'dev' | 'prod'
+        batchInterval: 5000,         // Optional: how often to batch events (ms)
+        metadataInterval: 30000,     // Optional: how often to send metadata heartbeat (ms)
+      }}
+    >
       <YourApp />
     </AnalyticsProvider>
   );
 }
 ```
+
+### `config` Options
+
+The `AnalyticsProvider` accepts an optional `config` object:
+
+| Option             | Type              | Default | Description                                    |
+| ------------------ | ----------------- | ------- | ---------------------------------------------- |
+| `environment`      | `'dev' \| 'prod'` | `prod`  | Enables dev logs when set to `'dev'`           |
+| `batchInterval`    | `number`          | `5000`  | Interval (in ms) to batch and send events      |
+| `metadataInterval` | `number`          | `30000` | Interval (in ms) to send core environment data |
+
+---
 
 ## Core Concepts
 
@@ -46,7 +64,7 @@ function App() {
 
 All tracked events follow this structure:
 
-```typescript
+```tsx
 interface Event {
   type: string;                    // Event type identifier
   metadata: Record<string, any>;   // Custom event data
@@ -54,9 +72,13 @@ interface Event {
   elementRef?: HTMLElement;        // Reference to DOM element
   elementPath?: string;            // CSS selector path to element
   elementId?: string;              // Custom element identifier
-  // ... environment metadata
 }
+
+
 ```
+---
+
+*Continue with your hook references, patterns, and best practices...*
 
 ### Element Path Generation
 
@@ -682,23 +704,6 @@ const track = useTrackEvent('button_click', metadata, {
 const track = useTrackEvent('scroll_event', metadata, {
   includeElementPath: false // Skip for performance
 });
-```
-
-### 5. Error Boundaries
-
-Wrap analytics components to prevent tracking errors from breaking the app:
-
-```jsx
-function AnalyticsErrorBoundary({ children }) {
-  return (
-    <ErrorBoundary
-      fallback={<div>Analytics unavailable</div>}
-      onError={(error) => console.warn('Analytics error:', error)}
-    >
-      {children}
-    </ErrorBoundary>
-  );
-}
 ```
 
 ## TypeScript Support
