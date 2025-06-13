@@ -1,16 +1,10 @@
-import React, {
-  HTMLAttributes,
-  JSX,
-  ReactNode,
-  useEffect,
-  useRef,
-} from 'react';
-import { Config, Event, Listener } from './types';
+import React, { JSX, ReactNode, useEffect, useRef } from 'react';
+import { Config, Listener } from './types';
 import { flushQueue } from './queue';
 import { AnalyticsContext } from './analytics-context';
-import { getEnvMeta } from './utils';
+import { buildEvent, getConfig } from './utils';
 
-export interface ProviderProps extends HTMLAttributes<HTMLDivElement> {
+export interface ProviderProps {
   children: ReactNode;
   config?: Config;
 }
@@ -26,6 +20,8 @@ export const AnalyticsProvider = ({
     console.log('Analytics Provider Initialized');
   }
 
+  const appConfig = getConfig({ ...config });
+
   useEffect(() => {
     // Interval for flushing queued events
     const queueInterval = setInterval(() => {
@@ -38,21 +34,19 @@ export const AnalyticsProvider = ({
     // Separate interval for auto-tracking core metadata
     const metadataInterval = setInterval(() => {
       if (listenerRef.current) {
-        const coreMetadata = getEnvMeta();
-
-        const metadataEvent: Event = {
-          type: 'metadata_heartbeat',
-          metadata: coreMetadata,
-          timestamp: Date.now(),
-        };
-
-        if (config?.environment === 'dev') {
-          console.log('Sending core metadata:', metadataEvent);
+        const eventData = buildEvent({ type: 'metadata_heartbeat' });
+        if (appConfig.sendMetadata) {
         }
 
-        listenerRef.current([metadataEvent]);
+        if (config?.environment === 'dev') {
+          console.log('Sending core metadata:', eventData);
+        }
+
+        if (config?.sendMetadata) {
+          listenerRef.current([eventData]);
+        }
       }
-    }, config?.metadataInterval || 30000); // Default to 30 seconds
+    }, config?.metadataInterval || 30000);
 
     return () => {
       clearInterval(queueInterval);
@@ -65,7 +59,10 @@ export const AnalyticsProvider = ({
   };
 
   return (
-    <AnalyticsContext.Provider value={{ setListener }} {...props}>
+    <AnalyticsContext.Provider
+      value={{ setListener, config: appConfig }}
+      {...props}
+    >
       {children}
     </AnalyticsContext.Provider>
   );

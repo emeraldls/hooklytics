@@ -2,45 +2,9 @@ import { useEffect, useRef, useCallback } from 'react';
 import { enqueue } from './queue';
 import { useAnalyticsContext } from './analytics-context';
 import { Event } from './types';
-import { getEnvMeta } from './utils';
+import { buildEvent } from './utils';
 
 // Utility to generate a unique selector path for an element
-const getElementPath = (element: HTMLElement): string => {
-  const path: string[] = [];
-  let current: Element | null = element;
-
-  while (current && current !== document.body) {
-    let selector = current.tagName.toLowerCase();
-
-    if (current.id) {
-      selector += `#${current.id}`;
-      path.unshift(selector);
-      break;
-    }
-
-    if (current.className) {
-      selector += `.${current.className
-        .trim()
-        .split(/\s+/)
-        .join('.')}`;
-    }
-
-    const siblings = Array.from(current.parentElement?.children || []);
-    const sameTagSiblings = siblings.filter(
-      s => s.tagName === current!.tagName
-    );
-
-    if (sameTagSiblings.length > 1) {
-      const index = sameTagSiblings.indexOf(current) + 1;
-      selector += `:nth-of-type(${index})`;
-    }
-
-    path.unshift(selector);
-    current = current.parentElement;
-  }
-
-  return path.join(' > ');
-};
 
 /**
  *  Original hook with element reference support
@@ -54,39 +18,27 @@ export const useTrackEvent = <
   D extends Record<string, any>,
   E extends HTMLElement = any
 >(
-  type: T,
-  metadata: D,
-
   options: {
     elementRef?: React.RefObject<E>;
     elementId?: string;
     includeElementPath?: boolean;
   } = {}
 ) => {
-  const track = useCallback(() => {
-    const element = options.elementRef?.current;
-
-    const eventData: Event = {
-      type,
-      metadata,
-      timestamp: Date.now(),
-      ...getEnvMeta(),
-    };
-
-    // Add element reference information
-    if (element) {
-      eventData.elementRef = element;
-      if (options.includeElementPath) {
-        eventData.elementPath = getElementPath(element);
-      }
-    }
-
-    if (options.elementId) {
-      eventData.elementId = options.elementId;
-    }
-
-    enqueue(eventData);
-  }, [type, metadata, options]);
+  const { config } = useAnalyticsContext();
+  const track = useCallback(
+    (type: T, metadata: D) => {
+      const element = options.elementRef?.current;
+      const eventData = buildEvent({
+        type,
+        metadata,
+        options,
+        element,
+        config,
+      });
+      enqueue(eventData);
+    },
+    [options]
+  );
 
   return track;
 };
@@ -103,38 +55,30 @@ export const useTrackElementEvent = <
   D extends Record<string, any>,
   E extends HTMLElement = any
 >(
-  type: T,
-  metadata: D,
   options: {
     includeElementPath?: boolean;
     elementId?: string;
   } = {}
 ) => {
   const elementRef = useRef<E>(null);
+  const { config } = useAnalyticsContext();
 
-  const track = useCallback(() => {
-    const element = elementRef.current;
+  const track = useCallback(
+    (type: T, metadata: D) => {
+      const element = elementRef.current;
 
-    const eventData: Event = {
-      type,
-      metadata,
-      timestamp: Date.now(),
-      ...getEnvMeta(),
-    };
+      const eventData = buildEvent({
+        type,
+        metadata,
+        options,
+        element,
+        config,
+      });
 
-    if (element) {
-      eventData.elementRef = element;
-      if (options.includeElementPath) {
-        eventData.elementPath = getElementPath(element);
-      }
-    }
-
-    if (options.elementId) {
-      eventData.elementId = options.elementId;
-    }
-
-    enqueue(eventData);
-  }, [type, metadata, options]);
+      enqueue(eventData);
+    },
+    [options]
+  );
 
   return { elementRef, track };
 };
@@ -149,6 +93,7 @@ export const useTrackDuration = <T extends string, E extends HTMLElement = any>(
     includeElementPath?: boolean;
   } = {}
 ) => {
+  const { config } = useAnalyticsContext();
   const startTimeRef = useRef<number | null>(null);
   const isTrackingRef = useRef(false);
 
@@ -164,33 +109,26 @@ export const useTrackDuration = <T extends string, E extends HTMLElement = any>(
       const endTime = Date.now();
       const element = options.elementRef?.current;
 
-      const eventData: Event = {
-        type,
-        metadata: {
-          ...metadata,
-          entered_at: startTimeRef.current,
-          left_at: endTime,
-          duration: endTime - startTimeRef.current,
-        },
-        timestamp: endTime,
-        ...getEnvMeta(),
+      const metadataTosend = {
+        ...metadata,
+        entered_at: startTimeRef.current,
+        left_at: endTime,
+        duration: endTime - startTimeRef.current,
       };
 
-      // Add element reference information
-      if (element) {
-        eventData.elementRef = element;
-        if (options.includeElementPath) {
-          eventData.elementPath = getElementPath(element);
-        }
-      }
-
-      if (options.elementId) {
-        eventData.elementId = options.elementId;
-      }
+      const eventData = buildEvent({
+        type,
+        metadata: metadataTosend,
+        options: {
+          ...options,
+          customTimestamp: endTime,
+        },
+        element,
+        config,
+      });
 
       enqueue(eventData);
 
-      // Reset tracking state
       startTimeRef.current = null;
       isTrackingRef.current = false;
     }
@@ -215,32 +153,27 @@ export const useTrackClicks = <T extends string, E extends HTMLElement = any>(
   } = {}
 ) => {
   const elementRef = useRef<E>(null);
+  const { config } = useAnalyticsContext();
 
   useEffect(() => {
     const element = elementRef.current;
     if (!element) return;
 
     const handleClick = (event: MouseEvent) => {
-      const eventData: Event = {
-        type,
-        metadata: {
-          ...metadata,
-          clickX: event.clientX,
-          clickY: event.clientY,
-          button: event.button,
-        },
-        timestamp: Date.now(),
-        elementRef: element,
-        ...getEnvMeta(),
+      const data = {
+        ...metadata,
+        clickX: event.clientX,
+        clickY: event.clientY,
+        button: event.button,
       };
 
-      if (options.includeElementPath) {
-        eventData.elementPath = getElementPath(element);
-      }
-
-      if (options.elementId) {
-        eventData.elementId = options.elementId;
-      }
+      const eventData = buildEvent({
+        type,
+        metadata: data,
+        options,
+        element,
+        config,
+      });
 
       enqueue(eventData);
     };
@@ -275,6 +208,7 @@ export const useTrackVisibility = <
 ) => {
   const elementRef = useRef<E>(null);
   const hasTrackedOnce = useRef(false);
+  const { config } = useAnalyticsContext();
 
   useEffect(() => {
     const element = elementRef.current;
@@ -298,28 +232,22 @@ export const useTrackVisibility = <
             hasTrackedOnce.current = true;
           }
 
-          const eventData: Event = {
-            type,
-            metadata: {
-              ...metadata,
-              isVisible: entry.isIntersecting,
-              intersectionRatio: entry.intersectionRatio,
-              boundingClientRect: entry.boundingClientRect,
-              viewportHeight: window.innerHeight,
-              viewportWidth: window.innerWidth,
-            },
-            timestamp: Date.now(),
-            elementRef: element,
-            ...getEnvMeta(),
+          const data = {
+            ...metadata,
+            isVisible: entry.isIntersecting,
+            intersectionRatio: entry.intersectionRatio,
+            boundingClientRect: entry.boundingClientRect,
+            viewportHeight: window.innerHeight,
+            viewportWidth: window.innerWidth,
           };
 
-          if (options.includeElementPath) {
-            eventData.elementPath = getElementPath(element);
-          }
-
-          if (options.elementId) {
-            eventData.elementId = options.elementId;
-          }
+          const eventData = buildEvent({
+            type,
+            metadata: data,
+            options,
+            element,
+            config,
+          });
 
           enqueue(eventData);
         });

@@ -1,8 +1,9 @@
 import { createContext, useContext } from 'react';
-import { Listener } from './types';
+import { Config, Listener } from './types';
 
 export const AnalyticsContext = createContext<{
   setListener: (fn: Listener) => void;
+  config?: Config;
 } | null>(null);
 
 export const useAnalyticsContext = () => {
