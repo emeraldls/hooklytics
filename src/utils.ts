@@ -1,17 +1,22 @@
 import { Config, Event, Options } from './types';
 
+const isBrowser = typeof window !== 'undefined';
+
 export const getEnvMeta = (overrides: Record<string, any> = {}) => {
   const defaults = {
-    language: navigator.language,
-    page_title: document.title,
-    pathname: window.location.pathname,
-    querystring: window.location.search,
-    referrer: document.referrer,
-    screen_height: window.innerHeight,
-    screen_width: window.innerWidth,
-    user_agent: navigator.userAgent,
-    timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
-    url: window.location.href,
+    language: isBrowser ? navigator.language : 'en-US',
+    page_title: isBrowser ? document.title : '',
+    pathname: isBrowser ? window.location.pathname : '',
+    querystring: isBrowser ? window.location.search : '',
+    referrer: isBrowser ? document.referrer : '',
+    screen_height: isBrowser ? window.innerHeight : 0,
+    screen_width: isBrowser ? window.innerWidth : 0,
+    user_agent: isBrowser ? navigator.userAgent : '',
+    timezone: isBrowser
+      ? Intl.DateTimeFormat().resolvedOptions().timeZone
+      : 'UTC',
+    url: isBrowser ? window.location.href : '',
+    userId: '',
   };
 
   return {
@@ -24,16 +29,23 @@ export const getConfig = (overrides?: Config): Config => {
   const defaults: Config = {
     batchInterval: 1000,
     sendMetadata: true,
+    sendMetadataOnlyWhenVisible: false,
     debug: false,
     environment: 'prod',
     metadataInterval: 5000,
-    defaultMetadata: getEnvMeta(overrides?.defaultMetadata),
+    defaultMetadata: getEnvMeta(),
   };
 
-  return {
+  const mergedConfig = {
     ...defaults,
     ...overrides,
   };
+
+  if (overrides?.defaultMetadata) {
+    mergedConfig.defaultMetadata = getEnvMeta(overrides.defaultMetadata);
+  }
+
+  return mergedConfig;
 };
 
 const getElementPath = (element: HTMLElement): string => {
@@ -75,7 +87,7 @@ const getElementPath = (element: HTMLElement): string => {
 
 export const buildEvent = ({
   type,
-  metadata = {},
+  metadata,
   options,
   element,
   config,
@@ -92,7 +104,9 @@ export const buildEvent = ({
     metadata: {
       ...metadata,
     },
-    ...config?.defaultMetadata,
+    defaultMetadata: {
+      ...config?.defaultMetadata,
+    },
     element: {},
   };
 

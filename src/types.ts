@@ -4,9 +4,8 @@ export type Config = {
   metadataInterval?: number;
   defaultMetadata?: Record<string, any>;
   sendMetadata?: boolean;
-  userId?: any;
   debug?: boolean;
-  sessionId?: any;
+  sendMetadataOnlyWhenVisible?: boolean;
 };
 
 export type Options = {
@@ -25,6 +24,7 @@ export type EventElement = {
 export type Event = {
   type: string;
   metadata: Record<string, any>;
+  defaultMetadata: Record<string, any>;
   timestamp: number;
   element: EventElement;
 };

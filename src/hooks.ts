@@ -26,7 +26,7 @@ export const useTrackEvent = <
 ) => {
   const { config } = useAnalyticsContext();
   const track = useCallback(
-    (type: T, metadata: D) => {
+    ({ type, metadata }: { type: T; metadata?: D }) => {
       const element = options.elementRef?.current;
       const eventData = buildEvent({
         type,
@@ -64,7 +64,7 @@ export const useTrackElementEvent = <
   const { config } = useAnalyticsContext();
 
   const track = useCallback(
-    (type: T, metadata: D) => {
+    ({ type, metadata }: { type: T; metadata?: D }) => {
       const element = elementRef.current;
 
       const eventData = buildEvent({
@@ -84,15 +84,22 @@ export const useTrackElementEvent = <
 };
 
 // Manual duration tracking with explicit start/end control
-export const useTrackDuration = <T extends string, E extends HTMLElement = any>(
-  type: T,
-  metadata: Record<string, any> = {},
-  options: {
+export const useTrackDuration = <
+  T extends string,
+  E extends HTMLElement = any
+>({
+  type,
+  metadata,
+  options,
+}: {
+  type: T;
+  metadata?: Record<string, any>;
+  options?: {
     elementRef?: React.RefObject<E>;
     elementId?: string;
     includeElementPath?: boolean;
-  } = {}
-) => {
+  };
+}) => {
   const { config } = useAnalyticsContext();
   const startTimeRef = useRef<number | null>(null);
   const isTrackingRef = useRef(false);
@@ -107,7 +114,7 @@ export const useTrackDuration = <T extends string, E extends HTMLElement = any>(
   const endTracking = useCallback(() => {
     if (isTrackingRef.current && startTimeRef.current) {
       const endTime = Date.now();
-      const element = options.elementRef?.current;
+      const element = options?.elementRef?.current;
 
       const metadataTosend = {
         ...metadata,
@@ -144,14 +151,18 @@ export const useTrackDuration = <T extends string, E extends HTMLElement = any>(
  * @param options
  * @returns
  */
-export const useTrackClicks = <T extends string, E extends HTMLElement = any>(
-  type: T,
-  metadata: Record<string, any> = {},
-  options: {
+export const useTrackClicks = <T extends string, E extends HTMLElement = any>({
+  type,
+  metadata,
+  options,
+}: {
+  type: T;
+  metadata?: Record<string, any>;
+  options?: {
     includeElementPath?: boolean;
     elementId?: string;
-  } = {}
-) => {
+  };
+}) => {
   const elementRef = useRef<E>(null);
   const { config } = useAnalyticsContext();
 
@@ -195,17 +206,21 @@ export const useTrackClicks = <T extends string, E extends HTMLElement = any>(
 export const useTrackVisibility = <
   T extends string,
   E extends HTMLElement = any
->(
-  type: T,
-  metadata: Record<string, any> = {},
-  options: {
+>({
+  type,
+  metadata,
+  options,
+}: {
+  type: T;
+  metadata?: Record<string, any>;
+  options?: {
     threshold?: number;
     elementId?: string;
     includeElementPath?: boolean;
     trackOnlyVisible?: boolean; // Only track when becoming visible
     trackOnlyOnce?: boolean; // Track only the first time it becomes visible
-  } = {}
-) => {
+  };
+}) => {
   const elementRef = useRef<E>(null);
   const hasTrackedOnce = useRef(false);
   const { config } = useAnalyticsContext();
@@ -218,12 +233,12 @@ export const useTrackVisibility = <
       entries => {
         entries.forEach(entry => {
           // Skip if we only want to track visible events and this isn't visible
-          if (options.trackOnlyVisible && !entry.isIntersecting) {
+          if (options?.trackOnlyVisible && !entry.isIntersecting) {
             return;
           }
 
           // Skip if we only want to track once and we already have
-          if (options.trackOnlyOnce && hasTrackedOnce.current) {
+          if (options?.trackOnlyOnce && hasTrackedOnce.current) {
             return;
           }
 
@@ -252,7 +267,7 @@ export const useTrackVisibility = <
           enqueue(eventData);
         });
       },
-      { threshold: options.threshold || 0.5 }
+      { threshold: options?.threshold || 0.5 }
     );
 
     observer.observe(element);

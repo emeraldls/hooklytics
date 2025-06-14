@@ -15,12 +15,12 @@ export const AnalyticsProvider = ({
   ...props
 }: ProviderProps): JSX.Element => {
   const listenerRef = useRef<Listener | null>(null);
+  const appConfig = getConfig({ ...config });
 
-  if (config?.environment === 'dev') {
+  if (appConfig?.environment === 'dev') {
+    console.log('App Config', appConfig);
     console.log('Analytics Provider Initialized');
   }
-
-  const appConfig = getConfig({ ...config });
 
   useEffect(() => {
     // Interval for flushing queued events
@@ -29,30 +29,44 @@ export const AnalyticsProvider = ({
       if (events.length > 0 && listenerRef.current) {
         listenerRef.current(events);
       }
-    }, config?.batchInterval || 5000);
+    }, appConfig?.batchInterval || 5000);
 
     // Separate interval for auto-tracking core metadata
     const metadataInterval = setInterval(() => {
-      if (listenerRef.current) {
-        const eventData = buildEvent({ type: 'metadata_heartbeat' });
-        if (appConfig.sendMetadata) {
-        }
+      if (listenerRef.current && appConfig?.sendMetadata) {
+        // only send metadata when page is visible
+        const isPageVisible = appConfig?.sendMetadataOnlyWhenVisible
+          ? !document.hidden
+          : true;
 
-        if (config?.environment === 'dev') {
-          console.log('Sending core metadata:', eventData);
-        }
+        if (isPageVisible) {
+          const eventData = buildEvent({
+            type: 'metadata_heartbeat',
+            config: appConfig,
+          });
 
-        if (config?.sendMetadata) {
+          if (appConfig?.environment === 'dev') {
+            console.log('Sending core metadata:', eventData);
+          }
+
           listenerRef.current([eventData]);
+        } else if (appConfig?.environment === 'dev') {
+          console.log('Skipping metadata heartbeat - page not visible');
         }
       }
-    }, config?.metadataInterval || 30000);
+    }, appConfig?.metadataInterval || 30000);
 
     return () => {
       clearInterval(queueInterval);
       clearInterval(metadataInterval);
     };
-  }, [config?.batchInterval, config?.metadataInterval, config?.environment]);
+  }, [
+    appConfig?.batchInterval,
+    appConfig?.metadataInterval,
+    appConfig?.sendMetadata,
+    appConfig?.sendMetadataOnlyWhenVisible,
+    appConfig?.environment,
+  ]);
 
   const setListener = (fn: Listener) => {
     listenerRef.current = fn;
