@@ -3,6 +3,7 @@ export type Config = {
   environment?: 'prod' | 'dev';
   metadataInterval?: number;
   defaultMetadata?: Record<string, any>;
+  staticMetadata?: Record<string, any>;
   sendMetadata?: boolean;
   debug?: boolean;
   sendMetadataOnlyWhenVisible?: boolean;

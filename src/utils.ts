@@ -33,17 +33,13 @@ export const getConfig = (overrides?: Config): Config => {
     debug: false,
     environment: 'prod',
     metadataInterval: 5000,
-    defaultMetadata: getEnvMeta(),
+    staticMetadata: overrides?.defaultMetadata || {},
   };
 
   const mergedConfig = {
     ...defaults,
     ...overrides,
   };
-
-  if (overrides?.defaultMetadata) {
-    mergedConfig.defaultMetadata = getEnvMeta(overrides.defaultMetadata);
-  }
 
   return mergedConfig;
 };
@@ -98,6 +94,8 @@ export const buildEvent = ({
   element?: HTMLElement | null;
   config?: Config;
 }): Event => {
+  const currentEnvMeta = getEnvMeta(config?.staticMetadata || {});
+
   const eventData: Event = {
     type,
     timestamp: options?.customTimestamp || Date.now(),
@@ -105,7 +103,7 @@ export const buildEvent = ({
       ...metadata,
     },
     defaultMetadata: {
-      ...config?.defaultMetadata,
+      ...currentEnvMeta,
     },
     element: {},
   };
