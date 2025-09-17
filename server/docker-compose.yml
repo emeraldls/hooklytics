@@ -1,0 +1,28 @@
+services:
+  clickhouse:
+    image: clickhouse/clickhouse-server:latest
+    container_name: clickhouse
+    ports:
+      - "9003:9000"    # Native TCP interface for clients (Go driver)
+      - "8125:8123"    # HTTP interface (optional)
+    volumes:
+      - clickhouse_data:/var/lib/clickhouse
+    environment:
+      - CLICKHOUSE_PASSWORD=${CLICKHOUSE_SECURE_NATIVE_PASSWORD}
+
+  anaytics-track:
+    build: .
+    container_name: anaytics-track
+    ports:
+      - "3000:3000"
+    environment:
+      CLICKHOUSE_SECURE_NATIVE_HOSTNAME: ${CLICKHOUSE_SECURE_NATIVE_HOSTNAME}
+      CLICKHOUSE_SECURE_NATIVE_PORT: "9000"
+      CLICKHOUSE_SECURE_NATIVE_DATABASE: ${CLICKHOUSE_SECURE_NATIVE_DATABASE}
+      CLICKHOUSE_SECURE_NATIVE_USERNAME: ${CLICKHOUSE_SECURE_NATIVE_USERNAME}
+      CLICKHOUSE_SECURE_NATIVE_PASSWORD: ${CLICKHOUSE_SECURE_NATIVE_PASSWORD}
+    depends_on:
+      - clickhouse
+
+volumes:
+  clickhouse_data:
